@@ -87,7 +87,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // FFmpeg-Kit
-    implementation("com.arthenica:ffmpeg-kit-min:6.0-2")
+    implementation("com.arthenica:ffmpeg-kit-full:6.0-2")
 
     // Core
     implementation("androidx.core:core-ktx:1.13.1")
