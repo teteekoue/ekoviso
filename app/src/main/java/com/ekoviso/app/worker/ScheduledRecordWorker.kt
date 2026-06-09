@@ -3,8 +3,6 @@ package com.ekoviso.app.worker
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
-import com.arthenica.mobileffmpeg.Config
-import com.arthenica.mobileffmpeg.FFmpeg
 import com.ekoviso.app.data.local.entity.RecordingEntity
 import com.ekoviso.app.domain.repository.RecordingRepository
 import com.ekoviso.app.domain.repository.ScheduleRepository
@@ -42,9 +40,6 @@ class ScheduledRecordWorker @AssistedInject constructor(
         val fileName = "${timestamp}_${schedule.channelName.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")}.mkv"
         val outputFile = File(dir, fileName)
 
-        val cmd = "-y -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " +
-                "-i \"${schedule.channelUrl}\" -c copy -t ${schedule.durationMinutes * 60} \"${outputFile.absolutePath}\""
-
         val recording = RecordingEntity(
             channelName = schedule.channelName,
             channelUrl = schedule.channelUrl,
@@ -56,24 +51,41 @@ class ScheduledRecordWorker @AssistedInject constructor(
         )
 
         val recordingId = recordingRepository.addRecording(recording)
-        val rc = FFmpeg.execute(cmd)
 
-        if (rc == Config.RETURN_CODE_SUCCESS) {
-            recordingRepository.updateRecordingStatus(recordingId, "completed", outputFile.length())
-            scheduleRepository.updateScheduleStatus(scheduleId, "completed")
-        } else {
+        return try {
+            val cmd = arrayOf(
+                "ffmpeg", "-y",
+                "-reconnect", "1",
+                "-reconnect_streamed", "1",
+                "-reconnect_delay_max", "10",
+                "-i", schedule.channelUrl,
+                "-c", "copy",
+                "-t", (schedule.durationMinutes * 60).toString(),
+                outputFile.absolutePath
+            )
+            val process = Runtime.getRuntime().exec(cmd)
+            val rc = process.waitFor()
+
+            if (rc == 0) {
+                recordingRepository.updateRecordingStatus(recordingId, "completed", outputFile.length())
+                scheduleRepository.updateScheduleStatus(scheduleId, "completed")
+            } else {
+                recordingRepository.updateRecordingStatus(recordingId, "failed", 0)
+                scheduleRepository.updateScheduleStatus(scheduleId, "failed")
+            }
+
+            if (schedule.repeatType == "daily") {
+                scheduleNext(schedule, TimeUnit.DAYS.toMillis(1))
+            } else if (schedule.repeatType == "weekly") {
+                scheduleNext(schedule, TimeUnit.DAYS.toMillis(7))
+            }
+
+            Result.success()
+        } catch (e: Exception) {
             recordingRepository.updateRecordingStatus(recordingId, "failed", 0)
             scheduleRepository.updateScheduleStatus(scheduleId, "failed")
+            Result.failure()
         }
-
-        // Si répétition, reprogrammer
-        if (schedule.repeatType == "daily") {
-            scheduleNext(schedule, TimeUnit.DAYS.toMillis(1))
-        } else if (schedule.repeatType == "weekly") {
-            scheduleNext(schedule, TimeUnit.DAYS.toMillis(7))
-        }
-
-        return Result.success()
     }
 
     private fun scheduleNext(schedule: com.ekoviso.app.data.local.entity.ScheduleEntity, offsetMillis: Long) {

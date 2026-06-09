@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import com.arthenica.mobileffmpeg.Config
-import com.arthenica.mobileffmpeg.FFmpeg
 import com.ekoviso.app.data.local.entity.RecordingEntity
 import com.ekoviso.app.domain.repository.RecordingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,9 +59,6 @@ class PlayerViewModel @Inject constructor(
         val fileName = "${timestamp}_${channelName.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")}.$format"
         outputFile = File(dir, fileName)
 
-        val cmd = "-y -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 " +
-                "-i \"$url\" -c copy -t ${durationMinutes * 60} \"${outputFile!!.absolutePath}\""
-
         val recording = RecordingEntity(
             channelName = channelName,
             channelUrl = url,
@@ -76,11 +71,26 @@ class PlayerViewModel @Inject constructor(
 
         recordingJob = viewModelScope.launch(Dispatchers.IO) {
             recordingId = recordingRepository.addRecording(recording)
-            val rc = FFmpeg.execute(cmd)
-            if (rc == Config.RETURN_CODE_SUCCESS) {
+            try {
+                val cmd = arrayOf(
+                    "ffmpeg", "-y",
+                    "-reconnect", "1",
+                    "-reconnect_streamed", "1",
+                    "-reconnect_delay_max", "10",
+                    "-i", url,
+                    "-c", "copy",
+                    "-t", (durationMinutes * 60).toString(),
+                    outputFile!!.absolutePath
+                )
+                val process = Runtime.getRuntime().exec(cmd)
+                val rc = process.waitFor()
                 val size = outputFile?.length() ?: 0
-                recordingId?.let { recordingRepository.updateRecordingStatus(it, "completed", size) }
-            } else {
+                if (rc == 0) {
+                    recordingId?.let { recordingRepository.updateRecordingStatus(it, "completed", size) }
+                } else {
+                    recordingId?.let { recordingRepository.updateRecordingStatus(it, "failed", size) }
+                }
+            } catch (e: Exception) {
                 recordingId?.let { recordingRepository.updateRecordingStatus(it, "failed", 0) }
             }
             withContext(Dispatchers.Main) {
@@ -90,10 +100,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun stopRecording() {
-        val processId = outputFile?.absolutePath?.let { path ->
-            Config.getRunningProcesses().find { it.arguments.contains(path) }?.processId
-        }
-        processId?.let { FFmpeg.cancel(it) }
         recordingJob?.cancel()
         _isRecording.value = false
     }
