@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EkoViso</string>
+    <string name="drawer_channels">Toutes les chaînes</string>
+    <string name="drawer_recordings">Mes enregistrements</string>
+    <string name="drawer_schedules">Programmes</string>
+    <string name="drawer_settings">Paramètres</string>
+    <string name="search_hint">Rechercher une chaîne…</string>
+    <string name="no_channels">Aucune chaîne trouvée</string>
+    <string name="no_recordings">Aucun enregistrement</string>
+    <string name="no_schedules">Aucun programme</string>
+    <string name="record_button">Enregistrer</string>
+    <string name="stop_recording">Arrêter l\'enregistrement</string>
+    <string name="schedule_button">Programmer</string>
+    <string name="cancel">Annuler</string>
+    <string name="delete">Supprimer</string>
+    <string name="retry">Réessayer</string>
+</resources>

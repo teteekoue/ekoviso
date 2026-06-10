@@ -1,0 +1,10 @@
+- [x] Corriger le téléchargement et parsing M3U
+- [x] Splash screen avec logo 3 secondes
+- [x] Menu latéral : Live, Enregistrements, Programmes, Paramètres
+- [x] Écran Live : liste des chaînes + recherche + lecteur intégré
+- [x] Écran Enregistrements : liste, lecteur hors ligne, suppression
+- [x] Écran Programmes : création (chaîne, heure, durée, format, répétition), modification, suppression
+- [x] Écran Paramètres : ajout URL playlist, formats, qualité
+- [x] Bouton enregistrer dans le lecteur live
+- [x] Logo dans le drawer
+- [x] Build et test (En attente de déploiement CI)
