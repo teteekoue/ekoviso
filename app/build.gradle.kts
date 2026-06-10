@@ -93,7 +93,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // FFmpeg-Kit (Modern maintained fork for 2026)
-    implementation("io.github.jamaismagic.ffmpeg:ffmpeg-kit-full-16kb:6.1.6")
+    implementation("io.github.jamaismagic.ffmpeg:ffmpeg-kit-full-16kb:6.0.1")
     implementation("com.arthenica:smart-exception-java:0.2.1")
 
     // Core
